@@ -4,7 +4,10 @@ import torch
 import neural_network, mancala_game
 import pickle
 
-#updated !!!
+
+
+
+
 #basic player class
 class Player():
     def __init__(self, stones, game, player):
