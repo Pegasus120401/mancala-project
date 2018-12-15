@@ -3,6 +3,7 @@ import torch.nn as nn
 
 
 class NN(nn.Module):
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     def __init__(self, layers, alpha=0.01, final_alpha = 1e-5):
         super(NN, self).__init__()
         self.alpha = alpha
@@ -18,8 +19,7 @@ class NN(nn.Module):
         #set optimizer, loss function, device
         self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.alpha)
         self.loss = torch.nn.MSELoss()
-        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-        self.to(self.device)
+        self.to(NN.device)
 
 
     def forward(self, input):
