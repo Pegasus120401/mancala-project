@@ -1,30 +1,41 @@
-import time, mancala_players
+import time
+import mancala_players as mp
 import numpy as np
-import torch, os
+import torch, os, random
 
 
 
 
 class Game():
     """The main mancala game class"""
-    player_dict = {"human":mancala_players.Human_Player, "random":mancala_players.Random_Player, "ql":mancala_players.Q_Learning_Player}
-    def __init__(self, player1, player2, stones=4, verbose=True):
+    #player_dict = {"PI": mancala_players.Policy_iter_agent, "human":mancala_players.Human_Player, "random":mancala_players.Random_Player, "ql":mancala_players.Deep_Q_Learning_Player}
+    def __init__(self, player1, player2, stones=4, verbose=False):
         self.verbose = verbose
-        if player1 == "human" or player2 == "human":
+        if isinstance(player1, mp.Human_Player) or isinstance(player2, mp.Human_Player):
             self.verbose = True
         #player objects
-        self.player1 = self.player_dict[player1](stones, self, 0)
-        self.player2 = self.player_dict[player2](stones, self, 1)
+        # self.player1 = self.player_dict[player1](self, 0)
+        # self.player2 = self.player_dict[player2](self, 1)
+        self.player1 = player1
+        self.player1.set_player_number(0)
+        self.player1.set_game(self)
+        self.player2 = player2
+        self.player2.set_player_number(1)
+        self.player2.set_game(self)
         self.players = (self.player1, self.player2)
-        self.turn = 0
+        self.turn = random.randint(0,1)
 
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 
     def re_initialize(self):
-        self.turn = 0
+        self.turn = random.randint(0,1)
         for p in self.players:
             p.re_initialize()
+
+
+    def test_mode(self):
+        for p in self.players: p.test_mode()
 
 
     def eq_states(self, s1, s2):
@@ -83,7 +94,7 @@ class Game():
 
             player = self.players[self.turn]
             if self.verbose: print("PLAYER " + str(self.turn +1) + " TURN")
-            #choice between 0 and 5ת
+            #choice between 0 and 5
             choice = player.do_turn()
             if self.verbose: print("Chose " + str(choice + 1))
             while (True):
@@ -103,12 +114,12 @@ class Game():
             holes = player.holes + [player.pit] + self.players[self.turn - 1].holes
             #print(holes[5-choice])
             #print(type(holes[5-choice]))
-            stones = range(holes[5 - choice])
+            stones_in_hole = range(holes[5 - choice])
 
 
             j = 6-choice
             """execution of turn: until stones are over, one each is distributed to consequent holes."""
-            for i in stones:
+            for i in stones_in_hole:
                 holes[5-choice] -= 1
                 holes[j%13]+=1
                 j+=1

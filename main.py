@@ -1,32 +1,95 @@
-import mancala_game
+import mancala_game as mg
 import pickle
-import mancala_players
+import mancala_players as mp
 import matplotlib.pyplot as plt
 import numpy as np
+import random
 
-num_episodes = 20
-y = []
+num_episodes = 3
+PI_vs_VI_stats = []
 print("starting...")
-ql_vs_ql_game = mancala_game.Game("ql", "ql", verbose=False)
-ql_vs_human_game = mancala_game.Game("ql", "human", verbose=False)
-human_vs_ql_game = mancala_game.Game("human", "ql", verbose=False)
-ql_vs_rand_game = mancala_game.Game("ql", "random", verbose=False)
+PI_player1 = mp.Policy_iter_agent()
+PI_player2 = mp.Policy_iter_agent()
+VI_player1 = mp.Value_iter_agent()
+VI_player2 = mp.Value_iter_agent()
+random_player = mp.Random_Player()
+human_player = mp.Human_Player()
+human_vs_PI_game = mg.Game(human_player, PI_player2)
+human_vs_VI_game = mg.Game(human_player, VI_player2)
+PI_vs_PI_game = mg.Game(PI_player1, PI_player2)
+VI_vs_VI_game = mg.Game(VI_player1, VI_player2)
+PI_vs_VI_game = mg.Game(PI_player2, VI_player1)
+PI_vs_random_game = mg.Game(PI_player1, random_player)
+VI_vs_random_game = mg.Game(VI_player2, random_player)
 for j in range(num_episodes):
     #result counters
+
+
+
+    for i in range(10):
+        #play game
+
+        game = PI_vs_PI_game
+        game.play()
+        game.re_initialize()
+        game = VI_vs_VI_game
+        game.play()
+        game.re_initialize()
+
+    # game = human_vs_VI_game
+    # game.play()
+    # game.re_initialize()
+
+    # TESTS
 
     one = 0
     two = 0
     tie = 0
-    game = human_vs_ql_game
-    for i in range(20):
-        #play game
-        game.play()
-        game.re_initialize()
-
-    game = ql_vs_rand_game
     for i in range(5):
         #play game and count wins
 
+        game = PI_vs_random_game
+        game.test_mode()
+        cnt = game.play()
+        game.re_initialize()
+        if cnt == 0:
+            tie += 1
+        elif cnt == 1:
+            one += 1
+        else:
+            two += 1
+
+    print(str(j + 1) + ") PI: " + str(one) + " random: " + str(two) + " Tie: " + str(tie))
+
+
+
+    one = 0
+    two = 0
+    tie = 0
+    for i in range(5):
+        # play game and count wins
+
+        game = VI_vs_random_game
+        game.test_mode()
+        cnt = game.play()
+        game.re_initialize()
+        if cnt == 0:
+            tie += 1
+        elif cnt == 1:
+            one += 1
+        else:
+            two += 1
+
+    print(str(j + 1) + ") VI: " + str(one) + " random: " + str(two) + " Tie: " + str(tie))
+
+
+    one = 0
+    two = 0
+    tie = 0
+    for i in range(10):
+        #play game and count wins
+        game = PI_vs_VI_game
+        game.test_mode()
         cnt = game.play()
         game.re_initialize()
         if cnt == 0:
@@ -37,23 +100,30 @@ for j in range(num_episodes):
             two += 1
 
     #save neural network data
-    pickle_file = open("NN_10_10.pickle", "wb")
-    pickle.dump(mancala_players.Q_Learning_Player.net, pickle_file)
-    pickle_file.close()
+    mp.Policy_iter_agent.store_net()
+    mp.Value_iter_agent.store_net()
     #later used for graph
-    y.append(one)
-    print(str(j+1) + ") One: " + str(one) + " Two: " + str(two) + " Tie: " + str(tie))
+    PI_vs_VI_stats.append((one, two, tie))
+    print(str(j+1) + ") PI: " + str(one) + " VI: " + str(two) + " Tie: " + str(tie))
 
 
-
+game = human_vs_PI_game
+game.test_mode()
+cnt = game.play()
+game.re_initialize()
+game = human_vs_VI_game
+game.test_mode()
+cnt = game.play()
+game.re_initialize()
 #plot graph
 x = np.arange(0, num_episodes, 1)
-y = np.array(y)
+PI_win = np.array([i[0] for i in PI_vs_VI_stats])
+VI_win = np.array([i[1] for i in PI_vs_VI_stats])
 plt.ion()
 fig = plt.figure()
 ax = fig.add_subplot(111)
-line1, = ax.plot(x, y, 'b-')
-print("average: " + str(sum(y)/len(y)))
+line1, = ax.plot(x, PI_win, 'b-')
+line2, = ax.plot(x, VI_win, 'g-')
 while 1:
     plt.pause(1)
     fig.canvas.draw()
